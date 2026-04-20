@@ -7896,6 +7896,8 @@ class VIEW3D_PT_proportional_edit(Panel):
             sub.active = not tool_settings.use_proportional_connected
             sub.prop(tool_settings, "use_proportional_projected")
             col.separator()
+            col.prop(tool_settings, "use_proportional_visualize")
+            col.separator()
 
         col.prop(tool_settings, "proportional_edit_falloff", expand=True)
         col.prop(tool_settings, "proportional_distance")

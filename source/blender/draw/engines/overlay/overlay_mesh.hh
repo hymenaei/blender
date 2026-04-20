@@ -74,6 +74,12 @@ class Meshes : Overlay {
   bool show_face_overlay_ = false;
   bool show_weight_ = false;
 
+  /* Proportional editing influence visualization state */
+  bool use_prop_visualize_ = false;
+  float3 prop_center_ = float3(0.0f);
+  float prop_size_ = 0.0f;
+  int prop_mode_ = 0;
+
   bool select_vert_ = false;
   bool select_edge_ = false;
   bool select_face_ = false;
@@ -118,6 +124,18 @@ class Meshes : Overlay {
     show_mesh_analysis_ = (edit_flag & V3D_OVERLAY_EDIT_STATVIS);
     show_face_overlay_ = (edit_flag & V3D_OVERLAY_EDIT_FACES);
     show_weight_ = (edit_flag & V3D_OVERLAY_EDIT_WEIGHT);
+
+    /* Proportional editing influence visualization setup.
+     * Check if proportional editing is enabled and visualization is requested. */
+    use_prop_visualize_ = (tsettings->proportional_edit & PROP_EDIT_USE) &&
+                          (tsettings->proportional_edit & PROP_EDIT_VISUALIZE);
+    if (use_prop_visualize_) {
+      prop_size_ = tsettings->proportional_size;
+      prop_mode_ = tsettings->prop_mode;
+      /* For now, use the 3D cursor position as the center when no transform is active.
+       * During transform, the center should come from the transform system. */
+      prop_center_ = float3(state.scene->cursor.location);
+    }
 
     const bool show_face_nor = (edit_flag & V3D_OVERLAY_EDIT_FACE_NORMALS);
     const bool show_loop_nor = (edit_flag & V3D_OVERLAY_EDIT_LOOP_NORMALS);
@@ -248,6 +266,13 @@ class Meshes : Overlay {
       pass.shader_set(res.shaders->mesh_edit_edge.get());
       pass.push_constant("do_smooth_wire", do_smooth_wire);
       pass.push_constant("use_vertex_selection", select_vert_);
+      /* Proportional editing influence visualization push constants */
+      pass.push_constant("use_prop_visualize", use_prop_visualize_);
+      pass.push_constant("prop_center", prop_center_);
+      pass.push_constant("prop_size", prop_size_);
+      pass.push_constant("prop_mode", prop_mode_);
+      /* Bind the color ramp texture for proportional editing visualization */
+      pass.bind_texture("propedit_ramp_tx", &res.propedit_ramp_tx);
       mesh_edit_common_resource_bind(pass, backwire_opacity, edge_ndc_offset_);
     }
     {

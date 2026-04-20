@@ -132,6 +132,7 @@ void Instance::init()
   resources.update_clip_planes(state);
 
   ensure_weight_ramp_texture();
+  ensure_propedit_ramp_texture();
 
   {
     eGPUTextureUsage usage = GPU_TEXTURE_USAGE_SHADER_READ;
@@ -219,6 +220,63 @@ void Instance::ensure_weight_ramp_texture()
       gpu::TextureFormat::SRGBA_8_8_8_8, res, GPU_TEXTURE_USAGE_SHADER_READ);
   GPU_texture_update(resources.weight_ramp_tx, GPU_DATA_UBYTE, pixels_ubyte);
 }
+
+void Instance::ensure_propedit_ramp_texture()
+{
+  /* Proportional editing influence visualization color ramp texture */
+  auto is_equal = [](const ColorBand &a, const ColorBand &b) {
+    if (a.tot != b.tot || a.cur != b.cur || a.ipotype != b.ipotype ||
+        a.ipotype_hue != b.ipotype_hue || a.color_mode != b.color_mode)
+    {
+      return false;
+    }
+
+    auto is_equal_cbd = [](const CBData &a, const CBData &b) {
+      return a.r == b.r && a.g == b.g && a.b == b.b && a.a == b.a && a.pos == b.pos &&
+             a.cur == b.cur;
+    };
+
+    for (int i = 0; i < ARRAY_SIZE(a.data); i++) {
+      if (!is_equal_cbd(a.data[i], b.data[i])) {
+        return false;
+      }
+    }
+    return true;
+  };
+
+  if (!is_equal(resources.propedit_ramp_copy, U.coba_propedit)) {
+    resources.propedit_ramp_copy = U.coba_propedit;
+    resources.propedit_ramp_tx.free();
+  }
+
+  if (resources.propedit_ramp_tx.is_valid()) {
+    /* Only recreate on updates. */
+    return;
+  }
+
+  auto evaluate_propedit_to_color = [&](const float influence, float result[4]) {
+    BKE_colorband_evaluate(&U.coba_propedit, influence, result);
+  };
+
+  constexpr int res = 256;
+
+  float pixels[res][4];
+  for (int i = 0; i < res; i++) {
+    evaluate_propedit_to_color(i / 255.0f, pixels[i]);
+    pixels[i][3] = 1.0f;
+  }
+
+  uchar4 pixels_ubyte[res];
+  for (int i = 0; i < res; i++) {
+    unit_float_to_uchar_clamp_v4(pixels_ubyte[i], pixels[i]);
+  }
+
+  resources.propedit_ramp_tx.ensure_1d(
+      gpu::TextureFormat::SRGBA_8_8_8_8, res, GPU_TEXTURE_USAGE_SHADER_READ);
+  GPU_texture_update(resources.propedit_ramp_tx, GPU_DATA_UBYTE, pixels_ubyte);
+}
+
+
 
 void Resources::update_clip_planes(const State &state)
 {

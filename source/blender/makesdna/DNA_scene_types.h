@@ -1993,6 +1993,7 @@ enum {
   PROP_EDIT_USE = (1 << 0),
   PROP_EDIT_CONNECTED = (1 << 1),
   PROP_EDIT_PROJECTED = (1 << 2),
+  PROP_EDIT_VISUALIZE = (1 << 3),
 };
 
 /** #ToolSettings::weightuser */

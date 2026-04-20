@@ -5152,6 +5152,15 @@ static void rna_def_userdef_view(BlenderRNA *brna)
                            "Color range used for weight visualization in weight painting mode");
   RNA_def_property_update(prop, 0, "rna_UserDef_weight_color_update");
 
+  prop = RNA_def_property(srna, "proportional_edit_color_range", PROP_POINTER, PROP_NONE);
+  RNA_def_property_flag(prop, PROP_NEVER_NULL);
+  RNA_def_property_pointer_sdna(prop, nullptr, "coba_propedit");
+  RNA_def_property_struct_type(prop, "ColorRamp");
+  RNA_def_property_ui_text(prop,
+                           "Proportional Edit Color Range",
+                           "Color range used for proportional editing influence visualization");
+  RNA_def_property_update(prop, 0, "rna_UserDef_weight_color_update");
+
   prop = RNA_def_property(srna, "show_navigate_ui", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, nullptr, "uiflag", USER_SHOW_GIZMO_NAVIGATE);
   RNA_def_property_ui_text(

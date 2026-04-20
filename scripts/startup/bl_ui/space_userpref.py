@@ -549,6 +549,19 @@ class USERPREF_PT_edit_weight_paint(EditingPanel, CenterAlignMixIn, Panel):
         col.template_color_ramp(view, "weight_color_range", expand=True)
 
 
+class USERPREF_PT_edit_proportional_editing(EditingPanel, CenterAlignMixIn, Panel):
+    bl_label = "Proportional Editing"
+    bl_options = {'DEFAULT_CLOSED'}
+
+    def draw_centered(self, context, layout):
+        prefs = context.preferences
+        view = prefs.view
+
+        layout.use_property_split = False
+
+        layout.template_color_ramp(view, "proportional_edit_color_range", expand=True)
+
+
 class USERPREF_PT_edit_text_editor(EditingPanel, CenterAlignMixIn, Panel):
     bl_label = "Text Editor"
     bl_options = {'DEFAULT_CLOSED'}
@@ -3148,6 +3161,7 @@ classes = (
     USERPREF_PT_edit_cursor,
     USERPREF_PT_edit_annotations,
     USERPREF_PT_edit_weight_paint,
+    USERPREF_PT_edit_proportional_editing,
     USERPREF_PT_edit_gpencil,
     USERPREF_PT_edit_text_editor,
     USERPREF_PT_edit_node_editor,

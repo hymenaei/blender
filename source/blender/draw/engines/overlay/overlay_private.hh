@@ -670,6 +670,11 @@ struct Resources : public select::SelectMap {
   /** Baked color ramp texture from theme and user settings. Maps weight [0..1] to color. */
   Texture weight_ramp_tx = {"weight_ramp"};
 
+  /** Proportional editing influence visualization color ramp. */
+  bool propedit_ramp_custom = false;
+  ColorBand propedit_ramp_copy = {};
+  Texture propedit_ramp_tx = {"propedit_ramp"};
+
   Vector<MovieClip *> bg_movie_clips;
 
   const ShapeCache &shapes;

@@ -40,6 +40,92 @@ float3 non_linear_blend_color(float3 col1, float3 col2, float fac)
   return pow(col, float3(2.2f));
 }
 
+/* -------------------------------------------------------------------- */
+/** \name Proportional Editing Influence Computation
+ * Only available for EDGE shaders since that's where visualization is applied.
+ * \{ */
+
+#ifdef EDGE
+
+/* Falloff modes - must match DNA_scene_types.h enum */
+#define PROP_SMOOTH 0
+#define PROP_SPHERE 1
+#define PROP_ROOT 2
+#define PROP_SHARP 3
+#define PROP_LIN 4
+#define PROP_CONST 5
+#define PROP_RANDOM 6
+#define PROP_INVSQUARE 7
+
+/* Compute proportional editing influence based on distance and falloff mode.
+ * Returns value in [0, 1] where 1 is full influence (near center) and 0 is no influence. */
+float prop_edit_falloff(float dist_normalized, int mode)
+{
+  /* Clamp to valid range */
+  dist_normalized = clamp(dist_normalized, 0.0f, 1.0f);
+
+  switch (mode) {
+    case PROP_SHARP:
+      return dist_normalized * dist_normalized;
+    case PROP_SMOOTH:
+      return min(1.0f, 3.0f * dist_normalized * dist_normalized -
+                           2.0f * dist_normalized * dist_normalized * dist_normalized);
+    case PROP_ROOT:
+      return sqrt(dist_normalized);
+    case PROP_LIN:
+      return dist_normalized;
+    case PROP_CONST:
+      return 1.0f;
+    case PROP_SPHERE:
+      return sqrt(max(0.0f, 2.0f * dist_normalized - dist_normalized * dist_normalized));
+    case PROP_INVSQUARE:
+      return dist_normalized * (2.0f - dist_normalized);
+    case PROP_RANDOM:
+      /* Note: Random mode uses a fixed seed for consistency within a frame.
+       * This is a simplified implementation. */
+      return dist_normalized;  /* Fallback to linear for visualization */
+    default:
+      return dist_normalized;
+  }
+}
+
+/* Compute influence for a world position given proportional editing parameters.
+ * Returns the influence value in [0, 1]. */
+float prop_edit_influence(float3 world_pos)
+{
+  if (!use_prop_visualize || prop_size <= 0.0f) {
+    return 0.0f;
+  }
+
+  /* Compute distance from proportional editing center */
+  float dist = distance(world_pos, prop_center);
+
+  /* Check if outside influence radius */
+  if (dist > prop_size) {
+    return 0.0f;
+  }
+
+  /* Normalize distance to [0, 1] where 0 is at center and 1 is at radius */
+  float dist_normalized = (prop_size - dist) / prop_size;
+
+  /* Apply falloff curve */
+  return prop_edit_falloff(dist_normalized, prop_mode);
+}
+
+/* Sample the proportional editing color ramp and return the color for the given influence. */
+float4 prop_edit_color(float influence)
+{
+  if (influence <= 0.0f) {
+    return float4(0.0f);
+  }
+  /* Sample from 1D color ramp texture. Influence is the texture coordinate. */
+  return texture(propedit_ramp_tx, influence);
+}
+
+#endif /* EDGE */
+
+/** \} */
+
 struct VertOut {
   float4 gpu_position;
   float4 final_color;
@@ -84,6 +170,16 @@ VertOut vertex_main(VertIn vert_in)
   else {
     vert_out.final_color = EDIT_MESH_edge_color_inner(m_data.y);
     vert_out.select_override = 1u;
+  }
+
+  /* Apply proportional editing influence coloring when visualization is enabled */
+  if (use_prop_visualize) {
+    float influence = prop_edit_influence(vert_out.world_position);
+    if (influence > 0.0f) {
+      float4 prop_color = prop_edit_color(influence);
+      /* Blend proportional color with base edge color */
+      vert_out.final_color.rgb = mix(vert_out.final_color.rgb, prop_color.rgb, prop_color.a);
+    }
   }
 
   float edge_crease = float(m_data.z & 0xFu) / 15.0f;

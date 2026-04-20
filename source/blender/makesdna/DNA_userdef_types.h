@@ -1163,6 +1163,8 @@ struct UserDef {
 
   /** From texture.h. */
   struct ColorBand coba_weight;
+  /** Color band for proportional editing influence visualization. */
+  struct ColorBand coba_propedit;
 
   float sculpt_paint_overlay_col[3] = {0, 0, 0};
   /** Default color for newly created Grease Pencil layers. */

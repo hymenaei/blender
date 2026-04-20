@@ -1567,6 +1567,18 @@ UserDef *BKE_blendfile_userdef_from_defaults()
 
   /* Init weight paint range. */
   BKE_colorband_init(&userdef->coba_weight, true);
+  /* Init proportional edit range. */
+  BKE_colorband_init(&userdef->coba_propedit, true);
+
+  userdef->coba_propedit.data[0].r = 0.2;
+  userdef->coba_propedit.data[0].g = 0.4;
+  userdef->coba_propedit.data[0].b = 0.8;
+  userdef->coba_propedit.data[0].a = 1.0;
+
+  userdef->coba_propedit.data[1].r = 0.9;
+  userdef->coba_propedit.data[1].g = 0.2;
+  userdef->coba_propedit.data[1].b = 0.1;
+  userdef->coba_propedit.data[1].a = 1.0;
 
   /* Default studio light. */
   BKE_studiolight_default(userdef->light_param, userdef->light_ambient);
