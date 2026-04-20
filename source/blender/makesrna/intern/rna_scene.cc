@@ -3596,6 +3596,7 @@ static void rna_def_tool_settings(BlenderRNA *brna)
   RNA_def_property_ui_text(
       prop, "Proportional Size", "Display size for proportional editing circle");
   RNA_def_property_range(prop, 0.00001, 5000.0);
+  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, nullptr); /* header redraw */
 
   prop = RNA_def_property(srna, "proportional_distance", PROP_FLOAT, PROP_DISTANCE);
   RNA_def_property_float_sdna(prop, nullptr, "proportional_size");
@@ -3603,6 +3604,7 @@ static void rna_def_tool_settings(BlenderRNA *brna)
   RNA_def_property_ui_text(
       prop, "Proportional Size", "Display size for proportional editing circle");
   RNA_def_property_range(prop, 0.00001, 5000.0);
+  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, nullptr); /* header redraw */
 
   prop = RNA_def_property(srna, "double_threshold", PROP_FLOAT, PROP_DISTANCE);
   RNA_def_property_float_sdna(prop, nullptr, "doublimit");
