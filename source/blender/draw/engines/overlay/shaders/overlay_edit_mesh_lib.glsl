@@ -90,14 +90,24 @@ float prop_edit_falloff(float dist_normalized, int mode)
 }
 
 /* Compute influence for a world position given proportional editing parameters.
- * Returns the influence value in [0, 1]. */
-float prop_edit_influence(float3 world_pos)
+ * Returns the influence value in [0, 1].
+ *
+ * PER-VERTEX FALLOFF FIX:
+ * - Selected vertices (indicated by is_selected flag) always have full influence (1.0)
+ * - Non-selected vertices compute distance from the prop_center (centroid of selected vertices)
+ * - This provides a proper per-vertex visualization that matches Blender's transform behavior */
+float prop_edit_influence(float3 world_pos, bool is_selected)
 {
   if (!use_prop_visualize || prop_size <= 0.0f) {
     return 0.0f;
   }
 
-  /* Compute distance from proportional editing center */
+  /* Selected vertices always have full influence */
+  if (is_selected) {
+    return 1.0f;
+  }
+
+  /* Compute distance from proportional editing center (centroid of selected vertices) */
   float dist = distance(world_pos, prop_center);
 
   /* Check if outside influence radius */
@@ -174,7 +184,13 @@ VertOut vertex_main(VertIn vert_in)
 
   /* Apply proportional editing influence coloring when visualization is enabled */
   if (use_prop_visualize) {
-    float influence = prop_edit_influence(vert_out.world_position);
+    /* Determine if this vertex is selected for per-vertex falloff calculation.
+     * VERT_SELECTED flag indicates the vertex is part of the selection set.
+     * For edges in vertex selection mode, both vertices need to be selected for the edge to be
+     * considered selected. For per-vertex visualization, we check each endpoint independently. */
+    bool is_vert_selected = (m_data.y & VERT_SELECTED) != 0u;
+    float influence = prop_edit_influence(vert_out.world_position, is_vert_selected);
+
     if (influence > 0.0f) {
       float4 prop_color = prop_edit_color(influence);
       /* Blend proportional color with base edge color */

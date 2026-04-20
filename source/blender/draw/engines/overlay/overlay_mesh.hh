@@ -79,6 +79,7 @@ class Meshes : Overlay {
   float3 prop_center_ = float3(0.0f);
   float prop_size_ = 0.0f;
   int prop_mode_ = 0;
+  const ToolSettings *tool_settings_ = nullptr;
 
   bool select_vert_ = false;
   bool select_edge_ = false;
@@ -124,6 +125,8 @@ class Meshes : Overlay {
     show_mesh_analysis_ = (edit_flag & V3D_OVERLAY_EDIT_STATVIS);
     show_face_overlay_ = (edit_flag & V3D_OVERLAY_EDIT_FACES);
     show_weight_ = (edit_flag & V3D_OVERLAY_EDIT_WEIGHT);
+    /* Store pointer to ToolSettings for real-time value access during draw */
+    tool_settings_ = tsettings;
 
     /* Proportional editing influence visualization setup.
      * Check if proportional editing is enabled and visualization is requested. */
@@ -132,9 +135,11 @@ class Meshes : Overlay {
     if (use_prop_visualize_) {
       prop_size_ = tsettings->proportional_size;
       prop_mode_ = tsettings->prop_mode;
-      /* For now, use the 3D cursor position as the center when no transform is active.
-       * During transform, the center should come from the transform system. */
-      prop_center_ = float3(state.scene->cursor.location);
+      /* Initialize prop_center_ to zero - will be computed from selected vertices
+       * during edit_object_sync when processing each edit mesh object.
+       * This ensures the visualization origin is based on actual selected geometry,
+       * not the 3D cursor. */
+      prop_center_ = float3(0.0f);
     }
 
     const bool show_face_nor = (edit_flag & V3D_OVERLAY_EDIT_FACE_NORMALS);
@@ -268,9 +273,9 @@ class Meshes : Overlay {
       pass.push_constant("use_vertex_selection", select_vert_);
       /* Proportional editing influence visualization push constants */
       pass.push_constant("use_prop_visualize", use_prop_visualize_);
-      pass.push_constant("prop_center", prop_center_);
-      pass.push_constant("prop_size", prop_size_);
-      pass.push_constant("prop_mode", prop_mode_);
+      pass.push_constant("prop_center", &prop_center_);                     // Pointer, not value!
+      pass.push_constant("prop_size", &tool_settings_->proportional_size);  // Read at draw time
+      pass.push_constant("prop_mode", &prop_mode_);
       /* Bind the color ramp texture for proportional editing visualization */
       pass.bind_texture("propedit_ramp_tx", &res.propedit_ramp_tx);
       mesh_edit_common_resource_bind(pass, backwire_opacity, edge_ndc_offset_);
@@ -341,6 +346,35 @@ class Meshes : Overlay {
     const bool use_gpu_subdiv = BKE_subsurf_modifier_has_gpu_subdiv(&mesh);
     const bool draw_as_solid = (ob->dt > OB_WIRE) && !state.xray_enabled;
     const bool has_edit_cage = mesh_has_edit_cage(ob);
+
+    /* Compute proportional editing center from selected vertices.
+     * This replaces the previous behavior that used the 3D cursor position.
+     * The center is computed as the centroid of all selected vertices in world space. */
+    if (use_prop_visualize_ && mesh.runtime->edit_mesh != nullptr) {
+      BMEditMesh *em = mesh.runtime->edit_mesh.get();
+      if (em != nullptr && em->bm != nullptr) {
+        BMesh *bm = em->bm;
+        float3 center_sum(0.0f);
+        int selected_count = 0;
+
+        /* Iterate over all vertices and sum positions of selected ones */
+        BMIter iter;
+        BMVert *v;
+        BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
+          if (BM_elem_flag_test(v, BM_ELEM_SELECT) && !BM_elem_flag_test(v, BM_ELEM_HIDDEN)) {
+            /* Transform vertex position to world space */
+            float3 world_pos = math::transform_point(ob->object_to_world(), float3(v->co));
+            center_sum += world_pos;
+            selected_count++;
+          }
+        }
+
+        /* If we found selected vertices, update the center */
+        if (selected_count > 0) {
+          prop_center_ = center_sum / float(selected_count);
+        }
+      }
+    }
 
     if (show_retopology_) {
       gpu::Batch *geom = DRW_mesh_batch_cache_get_edit_triangles(mesh);
