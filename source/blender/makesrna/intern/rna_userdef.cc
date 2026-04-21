@@ -1000,6 +1000,22 @@ static void rna_UserDef_weight_color_update(Main *bmain, Scene *scene, PointerRN
   rna_userdef_update(bmain, scene, ptr);
 }
 
+/* need to check this */
+static void rna_UserDef_prop_edit_color_update(Main *bmain, Scene *scene, PointerRNA *ptr)
+{
+  Object *ob;
+
+  for (ob = static_cast<Object *>(bmain->objects.first); ob;
+       ob = static_cast<Object *>(ob->id.next))
+  {
+    if (ob->mode & OB_MODE_EDIT) {
+      DEG_id_tag_update(&ob->id, ID_RECALC_GEOMETRY);
+    }
+  }
+
+  rna_userdef_update(bmain, scene, ptr);
+}
+
 static void rna_UserDef_viewport_lights_update(Main *bmain, Scene *scene, PointerRNA *ptr)
 {
   /* If all lights are off gpu_draw resets them all, see: #27627,
@@ -5150,6 +5166,17 @@ static void rna_def_userdef_view(BlenderRNA *brna)
                            "Weight Color Range",
                            "Color range used for weight visualization in weight painting mode");
   RNA_def_property_update(prop, 0, "rna_UserDef_weight_color_update");
+
+  /* Proportional Editing */
+
+  prop = RNA_def_property(srna, "prop_edit_color_range", PROP_POINTER, PROP_NONE);
+  RNA_def_property_flag(prop, PROP_NEVER_NULL);
+  RNA_def_property_pointer_sdna(prop, nullptr, "coba_propedit");
+  RNA_def_property_struct_type(prop, "ColorRamp");
+  RNA_def_property_ui_text(prop,
+                           "Proportional Editing Color Range",
+                           "Color range used for proportional editing influence visualization");
+  RNA_def_property_update(prop, 0, "rna_UserDef_prop_edit_color_update");
 
   prop = RNA_def_property(srna, "show_navigate_ui", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, nullptr, "uiflag", USER_SHOW_GIZMO_NAVIGATE);
