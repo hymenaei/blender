@@ -3545,13 +3545,6 @@ static void rna_def_tool_settings(BlenderRNA *brna)
       prop, "Connected Only", "Proportional Editing using connected geometry only");
   RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, nullptr); /* header redraw */
 
-  prop = RNA_def_property(srna, "show_proportional_influence", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, nullptr, "proportional_edit", PROP_EDIT_SHOW_INFLUENCE);
-  RNA_def_property_flag(prop, PROP_DEG_SYNC_ONLY);
-  RNA_def_property_ui_text(
-      prop, "Show Influence", "Show influence falloff colors on geometry during proportional editing");
-  RNA_def_property_update(prop, NC_SCENE | ND_TOOLSETTINGS, nullptr); /* header redraw */
-
   prop = RNA_def_property(srna, "use_proportional_edit_mask", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, nullptr, "proportional_mask", 0);
   RNA_def_property_flag(prop, PROP_DEG_SYNC_ONLY);

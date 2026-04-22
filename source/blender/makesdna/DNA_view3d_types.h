@@ -327,6 +327,8 @@ enum {
 
   V3D_OVERLAY_EDIT_CU_NORMALS = (1 << 21),
   V3D_OVERLAY_EDIT_CONSTANT_SCREEN_SIZE_NORMALS = (1 << 22),
+
+  V3D_OVERLAY_EDIT_PROP_EDIT_INFLUENCE = (1 << 23),
 };
 
 /** #View3DOverlay.paint_flag */
