@@ -312,7 +312,7 @@ static void imb_scale_box(const BufferT *src_buffer,
                           const bool threaded)
 {
   BufferT *tmp_buffer = MEM_new_array_uninitialized<BufferT>(
-      int64_t(channels) * src_size.x * dst_size.y, __func__);
+      int64_t(channels) * dst_size.x * src_size.y, __func__);
   if (dst_size.x < src_size.x) {
     scale_down_x_func(
         src_buffer, src_size, channels, tmp_buffer, int2(dst_size.x, src_size.y), threaded);
